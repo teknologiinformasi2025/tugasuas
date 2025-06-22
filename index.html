@@ -9,6 +9,8 @@
         margin: 0;
         font-family: Arial, sans-serif;
         background-image: url("images/pemandangan.jpg");
+        background-size: cover;
+        background-position: center;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -62,7 +64,7 @@
     <script>
       function login() {
         const userId = document.getElementById("userId").value.trim();
-        const allowedIds = ["satrio-1234"];
+        const allowedIds = ["satrio-1234", "trial1234"];
         for (let i = 2417041001; i <= 2417041051; i++) {
           allowedIds.push(i.toString());
         }

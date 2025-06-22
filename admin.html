@@ -66,6 +66,7 @@
         <!-- Data akan dimuat di sini -->
       </tbody>
     </table>
+    <button onclick="bukaAksesSoal()">Buka Akses Soal (Override)</button>
 
     <script>
       const dataPeserta = [
@@ -116,6 +117,11 @@
       }
 
       renderTabel();
+
+      function bukaAksesSoal() {
+        localStorage.setItem("overrideAksesSoal", "true");
+        alert("Akses soal telah dibuka kembali oleh admin.");
+      }
     </script>
   </body>
 </html>

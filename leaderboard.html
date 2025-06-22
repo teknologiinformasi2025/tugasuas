@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Leaderboard</title>
+    <title>Leaderboard Peserta</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -33,7 +33,31 @@
       tr:nth-child(even) {
         background-color: #f1f5f9;
       }
+      .back-button {
+        margin-top: 30px;
+        display: flex;
+        justify-content: center;
+      }
+      .back-button button {
+        padding: 10px 20px;
+        background-color: #1e3a8a;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .back-button button:hover {
+        background-color: #3b5ea7;
+      }
     </style>
+    <script>
+      // Cegah akses ke soal.html setelah menyelesaikan kuis, kecuali di halaman login
+      const currentPage = window.location.pathname;
+      const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+      if (terkunci && currentPage.includes("soal.html")) {
+        window.location.href = "leaderboard.html";
+      }
+    </script>
   </head>
   <body>
     <h1>Leaderboard Peserta</h1>
@@ -45,33 +69,20 @@
           <th>Durasi Pengerjaan</th>
         </tr>
       </thead>
-      <tbody id="leaderboard-body">
-        <!-- Data leaderboard akan dimuat di sini -->
-      </tbody>
+      <tbody id="leaderboard-body"></tbody>
     </table>
+    <div class="back-button">
+      <button onclick="window.location.href='index.html'">
+        Kembali ke Beranda
+      </button>
+    </div>
 
     <script>
-      // Simulasi data peserta (seharusnya dari server/database)
-      const pesertaData = [
-        {
-          id: "2417041003",
-          skor: 800,
-          waktuMulai: 1718977200000,
-          waktuSelesai: 1718980800000,
-        },
-        {
-          id: "2417041001",
-          skor: 1000,
-          waktuMulai: 1718979000000,
-          waktuSelesai: 1718980500000,
-        },
-        {
-          id: "2417041007",
-          skor: 600,
-          waktuMulai: 1718977200000,
-          waktuSelesai: 1718982000000,
-        },
-      ];
+      const pesertaData = JSON.parse(localStorage.getItem("riwayatSkor")) || [];
+      const userId = localStorage.getItem("userId");
+
+      // Kunci akses ke soal.html jika sudah selesai
+      localStorage.setItem("aksesSoalTerkunci", "true");
 
       function formatDurasi(ms) {
         const durasiDetik = Math.floor(ms / 1000);
@@ -82,21 +93,22 @@
 
       function renderLeaderboard() {
         const tbody = document.getElementById("leaderboard-body");
-        pesertaData.sort((a, b) => b.skor - a.skor);
-
-        pesertaData.forEach((p) => {
-          const row = document.createElement("tr");
-          const durasi =
-            p.waktuSelesai && p.waktuMulai
-              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
-              : "-";
-          row.innerHTML = `
-          <td>${p.id}</td>
-          <td>${p.skor}</td>
-          <td>${durasi}</td>
-        `;
-          tbody.appendChild(row);
-        });
+        tbody.innerHTML = "";
+        pesertaData
+          .filter((p) => p.id === userId)
+          .forEach((p) => {
+            const row = document.createElement("tr");
+            const durasi =
+              p.waktuSelesai && p.waktuMulai
+                ? formatDurasi(p.waktuSelesai - p.waktuMulai)
+                : "-";
+            row.innerHTML = `
+              <td>${p.id}</td>
+              <td>${p.skor}</td>
+              <td>${durasi}</td>
+            `;
+            tbody.appendChild(row);
+          });
       }
 
       renderLeaderboard();
