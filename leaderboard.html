@@ -51,7 +51,7 @@
       }
     </style>
     <script>
-      // Cegah akses ke soal.html setelah menyelesaikan kuis, kecuali di halaman login
+      // Cegah akses ke soal.html setelah menyelesaikan kuis
       const currentPage = window.location.pathname;
       const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
       if (terkunci && currentPage.includes("soal.html")) {
@@ -78,11 +78,24 @@
     </div>
 
     <script>
-      const pesertaData = JSON.parse(localStorage.getItem("riwayatSkor")) || [];
-      const userId = localStorage.getItem("userId");
+      const data = JSON.parse(localStorage.getItem("riwayatSkor")) || [];
 
-      // Kunci akses ke soal.html jika sudah selesai
+      // Kunci soal untuk semua peserta setelah selesai
       localStorage.setItem("aksesSoalTerkunci", "true");
+
+      // Gabungkan entri per ID peserta: ambil skor tertinggi dari peserta yang sama
+      const pesertaMap = new Map();
+
+      data.forEach((p) => {
+        if (!pesertaMap.has(p.id) || pesertaMap.get(p.id).skor < p.skor) {
+          pesertaMap.set(p.id, p);
+        }
+      });
+
+      const pesertaUnik = Array.from(pesertaMap.values());
+
+      // Urutkan berdasarkan skor tertinggi
+      pesertaUnik.sort((a, b) => b.skor - a.skor);
 
       function formatDurasi(ms) {
         const durasiDetik = Math.floor(ms / 1000);
@@ -94,21 +107,19 @@
       function renderLeaderboard() {
         const tbody = document.getElementById("leaderboard-body");
         tbody.innerHTML = "";
-        pesertaData
-          .filter((p) => p.id === userId)
-          .forEach((p) => {
-            const row = document.createElement("tr");
-            const durasi =
-              p.waktuSelesai && p.waktuMulai
-                ? formatDurasi(p.waktuSelesai - p.waktuMulai)
-                : "-";
-            row.innerHTML = `
-              <td>${p.id}</td>
-              <td>${p.skor}</td>
-              <td>${durasi}</td>
-            `;
-            tbody.appendChild(row);
-          });
+        pesertaUnik.forEach((p) => {
+          const durasi =
+            p.waktuSelesai && p.waktuMulai
+              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
+              : "-";
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${p.id}</td>
+            <td>${p.skor}</td>
+            <td>${durasi}</td>
+          `;
+          tbody.appendChild(row);
+        });
       }
 
       renderLeaderboard();

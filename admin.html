@@ -49,6 +49,17 @@
       button:hover {
         background-color: #c53030;
       }
+      .actions {
+        margin-top: 20px;
+        text-align: center;
+      }
+      .actions button {
+        margin: 5px;
+        background-color: #2b6cb0;
+      }
+      .actions button:hover {
+        background-color: #2c5282;
+      }
     </style>
   </head>
   <body>
@@ -62,28 +73,15 @@
           <th>Aksi</th>
         </tr>
       </thead>
-      <tbody id="adminTableBody">
-        <!-- Data akan dimuat di sini -->
-      </tbody>
+      <tbody id="adminTableBody"></tbody>
     </table>
-    <button onclick="bukaAksesSoal()">Buka Akses Soal (Override)</button>
+
+    <div class="actions">
+      <button onclick="bukaAksesSoal()">Buka Akses Soal (Override)</button>
+      <button onclick="kunciUlangSoal()">Kunci Ulang Soal</button>
+    </div>
 
     <script>
-      const dataPeserta = [
-        {
-          id: "2417041001",
-          skor: 800,
-          waktuMulai: 1718977200000,
-          waktuSelesai: 1718980800000,
-        },
-        {
-          id: "2417041005",
-          skor: 600,
-          waktuMulai: 1718978000000,
-          waktuSelesai: 1718981000000,
-        },
-      ];
-
       function formatDurasi(ms) {
         const durasiDetik = Math.floor(ms / 1000);
         const menit = Math.floor(durasiDetik / 60);
@@ -93,35 +91,50 @@
 
       function renderTabel() {
         const tbody = document.getElementById("adminTableBody");
+        const dataPeserta =
+          JSON.parse(localStorage.getItem("riwayatSkor")) || [];
+
         tbody.innerHTML = "";
+
         dataPeserta.forEach((p, index) => {
           const row = document.createElement("tr");
-          const durasi = formatDurasi(p.waktuSelesai - p.waktuMulai);
+          const durasi =
+            p.waktuSelesai && p.waktuMulai
+              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
+              : "-";
           row.innerHTML = `
-          <td>${p.id}</td>
-          <td>${p.skor}</td>
-          <td>${durasi}</td>
-          <td><button onclick="reset(${index})">Reset</button></td>
-        `;
+            <td>${p.id}</td>
+            <td>${p.skor}</td>
+            <td>${durasi}</td>
+            <td><button onclick="reset(${index})">Reset</button></td>
+          `;
           tbody.appendChild(row);
         });
       }
 
       function reset(index) {
+        const dataPeserta =
+          JSON.parse(localStorage.getItem("riwayatSkor")) || [];
         if (confirm("Yakin ingin mereset skor dan waktu peserta ini?")) {
           dataPeserta[index].skor = 0;
           dataPeserta[index].waktuMulai = Date.now();
           dataPeserta[index].waktuSelesai = Date.now();
+          localStorage.setItem("riwayatSkor", JSON.stringify(dataPeserta));
           renderTabel();
         }
       }
-
-      renderTabel();
 
       function bukaAksesSoal() {
         localStorage.setItem("overrideAksesSoal", "true");
         alert("Akses soal telah dibuka kembali oleh admin.");
       }
+
+      function kunciUlangSoal() {
+        localStorage.removeItem("overrideAksesSoal");
+        alert("Override akses soal telah dikunci ulang.");
+      }
+
+      renderTabel();
     </script>
   </body>
 </html>
