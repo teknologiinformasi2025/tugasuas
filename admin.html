@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f1f4f9;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #2a5298;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+      th {
+        background-color: #2a5298;
+        color: white;
+      }
+      input,
+      button {
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 16px;
+      }
+      button {
+        background-color: #e53935;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .form {
+        margin: 20px 0;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+      #timer {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        color: #2a5298;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Admin Panel - Leaderboard</h1>
+    <div id="timer">Memuat timer...</div>
+
+    <div class="form">
+      <input type="text" id="resetId" placeholder="Masukkan ID Peserta" />
+      <button onclick="resetUser()">Reset Skor & Waktu</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Peringkat</th>
+          <th>ID Peserta</th>
+          <th>Skor</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        onValue,
+        remove,
+        set,
+        get,
+      } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCiPXOr2eeg8NUUyEyyuE83XjtdwmrPjwY",
+        authDomain: "web-quiz-45e5b.firebaseapp.com",
+        projectId: "web-quiz-45e5b",
+        storageBucket: "web-quiz-45e5b.firebasestorage.app",
+        messagingSenderId: "793547501312",
+        appId: "1:793547501312:web:56b421b7a2fabfc6b48de5",
+        databaseURL: "https://web-quiz-45e5b-default-rtdb.firebaseio.com",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const tbody = document.getElementById("leaderboardBody");
+
+      const userId = localStorage.getItem("userId") || "guest";
+
+      function renderLeaderboard(snapshot) {
+        const data = snapshot.val();
+        const entries = Object.values(data || {});
+        entries.sort((a, b) => b.score - a.score);
+        tbody.innerHTML = entries
+          .map(
+            (e, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${e.userId}</td>
+          <td>${e.score}</td>
+        </tr>`
+          )
+          .join("");
+      }
+
+      const pesertaRef = ref(db, "peserta");
+      onValue(pesertaRef, renderLeaderboard);
+
+      window.resetUser = function () {
+        const resetId = document.getElementById("resetId").value.trim();
+        if (!resetId) return alert("Masukkan ID peserta!");
+        remove(ref(db, "peserta/" + resetId));
+        alert(`Peserta ${resetId} telah direset dari Firebase.`);
+      };
+
+      function startTimer() {
+        const userRef = ref(db, "peserta/" + userId);
+
+        get(userRef).then((snapshot) => {
+          let startTime;
+
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            if (data.startTime) {
+              startTime = data.startTime;
+            } else {
+              startTime = Date.now();
+              set(userRef, { ...data, startTime });
+            }
+          } else {
+            startTime = Date.now();
+            set(userRef, { userId, score: 0, startTime });
+          }
+
+          setInterval(() => {
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const hours = Math.floor((elapsed / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((elapsed / (1000 * 60)) % 60);
+            const seconds = Math.floor((elapsed / 1000) % 60);
+            document.getElementById(
+              "timer"
+            ).textContent = `${hours}j ${minutes}m ${seconds}d`;
+          }, 1000);
+        });
+      }
+
+      startTimer();
+    </script>
+  </body>
+</html>

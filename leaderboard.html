@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard Peserta</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #eef2f7;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        color: #2a5298;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+      th {
+        background-color: #2a5298;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Leaderboard Peserta</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Peringkat</th>
+          <th>ID Peserta</th>
+          <th>Skor</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        onValue,
+      } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCiPXOr2eeg8NUUyEyyuE83XjtdwmrPjwY",
+        authDomain: "web-quiz-45e5b.firebaseapp.com",
+        projectId: "web-quiz-45e5b",
+        storageBucket: "web-quiz-45e5b.firebasestorage.app",
+        messagingSenderId: "793547501312",
+        appId: "1:793547501312:web:56b421b7a2fabfc6b48de5",
+        databaseURL: "https://web-quiz-45e5b-default-rtdb.firebaseio.com",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+
+      const tbody = document.getElementById("leaderboardBody");
+
+      function renderLeaderboard(snapshot) {
+        const data = snapshot.val();
+        const entries = Object.values(data || {});
+        entries.sort((a, b) => b.score - a.score);
+        tbody.innerHTML = entries
+          .map(
+            (e, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${e.userId}</td>
+          <td>${e.score}</td>
+        </tr>`
+          )
+          .join("");
+      }
+
+      const pesertaRef = ref(db, "peserta");
+      onValue(pesertaRef, renderLeaderboard);
+    </script>
+  </body>
+</html>

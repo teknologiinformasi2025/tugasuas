@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Soal Kode</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(to right, #d7e1ec, #f0f4f8);
+      }
+      header {
+        background: #2a5298;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        position: relative;
+      }
+      #timer {
+        position: absolute;
+        right: 20px;
+        top: 15px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 20px;
+        gap: 20px;
+      }
+      .editor-container,
+      .preview-container {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      }
+      iframe {
+        width: 100%;
+        height: 300px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background: white;
+      }
+      .controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      button {
+        padding: 10px 20px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button[disabled] {
+        background: gray;
+      }
+      #score {
+        font-weight: bold;
+        color: #333;
+      }
+      .example {
+        margin-top: 10px;
+        background: #eef3ff;
+        padding: 10px;
+        border-left: 4px solid #2a5298;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Soal Pemrograman Web</h1>
+      <div id="timer">Loading timer...</div>
+    </header>
+    <div class="container">
+      <div class="editor-container">
+        <div class="example">
+          <strong>Preview yang Diinginkan:</strong>
+          <div id="targetPreview"></div>
+        </div>
+        <h3>HTML</h3>
+        <textarea id="htmlEditor"></textarea>
+        <h3>CSS</h3>
+        <textarea id="cssEditor"></textarea>
+        <h3>JavaScript</h3>
+        <textarea id="jsEditor"></textarea>
+        <div class="controls">
+          <button onclick="compileCode()">Compile</button>
+          <button id="nextBtn" onclick="nextSoal()" disabled>Next</button>
+          <span id="score">Score: 0</span>
+        </div>
+      </div>
+      <div class="preview-container">
+        <h3>Preview Kode Kamu</h3>
+        <iframe id="preview"></iframe>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        set,
+      } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCiPXOr2eeg8NUUyEyyuE83XjtdwmrPjwY",
+        authDomain: "web-quiz-45e5b.firebaseapp.com",
+        projectId: "web-quiz-45e5b",
+        storageBucket: "web-quiz-45e5b.firebasestorage.app",
+        messagingSenderId: "793547501312",
+        appId: "1:793547501312:web:56b421b7a2fabfc6b48de5",
+        databaseURL: "https://web-quiz-45e5b-default-rtdb.firebaseio.com",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const userId = localStorage.getItem("userId") || "Guest";
+
+      const soalData = [
+        {
+          id: 1,
+          question:
+            "Buatlah heading H1 dengan teks 'Halo Dunia!' dan beri warna biru",
+          answerHtml: "<h1>Halo Dunia!</h1>",
+          answerCss: "h1 { color: blue; }",
+          preview: "<h1 style='color:blue;'>Halo Dunia!</h1>",
+        },
+      ];
+
+      let currentSoal = 0;
+      let skor = 0;
+
+      const htmlEditor = CodeMirror.fromTextArea(
+        document.getElementById("htmlEditor"),
+        {
+          mode: "xml",
+          lineNumbers: true,
+          theme: "default",
+        }
+      );
+      const cssEditor = CodeMirror.fromTextArea(
+        document.getElementById("cssEditor"),
+        {
+          mode: "css",
+          lineNumbers: true,
+          theme: "default",
+        }
+      );
+      const jsEditor = CodeMirror.fromTextArea(
+        document.getElementById("jsEditor"),
+        {
+          mode: "javascript",
+          lineNumbers: true,
+          theme: "default",
+        }
+      );
+
+      function loadSoal() {
+        const soal = soalData[currentSoal];
+        document.querySelector(
+          "header h1"
+        ).textContent = `Soal ${soal.id}: ${soal.question}`;
+        document.getElementById("targetPreview").innerHTML = soal.preview;
+        htmlEditor.setValue("");
+        cssEditor.setValue("");
+        jsEditor.setValue("");
+        document.getElementById("nextBtn").disabled = true;
+      }
+
+      function compileCode() {
+        const html = htmlEditor.getValue();
+        const css = "<style>" + cssEditor.getValue() + "</style>";
+        const js = "<script>" + jsEditor.getValue() + "<\/script>";
+        const frame = document.getElementById("preview");
+        frame.srcdoc = html + css + js;
+
+        const soal = soalData[currentSoal];
+        const expectedHtml = soal.answerHtml.replace(/\s/g, "");
+        const expectedCss = soal.answerCss.replace(/\s/g, "");
+        const userHtml = html.replace(/\s/g, "");
+        const userCss = cssEditor.getValue().replace(/\s/g, "");
+
+        if (expectedHtml === userHtml && expectedCss === userCss) {
+          const startTime = localStorage.getItem("startTime") || Date.now();
+          const timeTaken = Date.now() - parseInt(startTime);
+          const sixHours = 6 * 60 * 60 * 1000;
+          const bonus = Math.max(
+            0,
+            Math.round(100 * (1 - timeTaken / sixHours))
+          );
+          skor += 100 + bonus;
+          document.getElementById("score").textContent = `Score: ${skor}`;
+          document.getElementById("nextBtn").disabled = false;
+        }
+      }
+
+      function nextSoal() {
+        if (currentSoal < soalData.length - 1) {
+          currentSoal++;
+          loadSoal();
+        } else {
+          alert("Soal selesai! Skor akhir: " + skor);
+          set(ref(db, "peserta/" + userId), {
+            userId: userId,
+            score: skor,
+            timestamp: Date.now(),
+          });
+          location.href = "leaderboard.html";
+        }
+      }
+
+      function startTimer() {
+        if (!localStorage.getItem("startTime")) {
+          localStorage.setItem("startTime", Date.now());
+        }
+        setInterval(() => {
+          const now = Date.now();
+          const start = parseInt(localStorage.getItem("startTime"));
+          const elapsed = now - start;
+          const hours = Math.floor((elapsed / (1000 * 60 * 60)) % 24);
+          const minutes = Math.floor((elapsed / (1000 * 60)) % 60);
+          const seconds = Math.floor((elapsed / 1000) % 60);
+          document.getElementById(
+            "timer"
+          ).textContent = `${hours}j ${minutes}m ${seconds}d`;
+        }, 1000);
+      }
+
+      window.onload = function () {
+        loadSoal();
+        startTimer();
+      };
+    </script>
+  </body>
+</html>
