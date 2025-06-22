@@ -1,94 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Leaderboard Peserta</title>
+    <title>Leaderboard</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        background: #eef2f7;
+        background: linear-gradient(to right, #f0f4f8, #dbeafe);
         margin: 0;
         padding: 20px;
       }
       h1 {
         text-align: center;
-        color: #2a5298;
+        color: #1e3a8a;
       }
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
-        background: white;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
       th,
       td {
-        padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #ccc;
+        padding: 12px;
         text-align: center;
       }
       th {
-        background-color: #2a5298;
+        background-color: #1e3a8a;
         color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f1f5f9;
       }
     </style>
   </head>
   <body>
     <h1>Leaderboard Peserta</h1>
-
     <table>
       <thead>
         <tr>
-          <th>Peringkat</th>
           <th>ID Peserta</th>
           <th>Skor</th>
+          <th>Durasi Pengerjaan</th>
         </tr>
       </thead>
-      <tbody id="leaderboardBody"></tbody>
+      <tbody id="leaderboard-body">
+        <!-- Data leaderboard akan dimuat di sini -->
+      </tbody>
     </table>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-      import {
-        getDatabase,
-        ref,
-        onValue,
-      } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+    <script>
+      // Simulasi data peserta (seharusnya dari server/database)
+      const pesertaData = [
+        {
+          id: "2417041003",
+          skor: 800,
+          waktuMulai: 1718977200000,
+          waktuSelesai: 1718980800000,
+        },
+        {
+          id: "2417041001",
+          skor: 1000,
+          waktuMulai: 1718979000000,
+          waktuSelesai: 1718980500000,
+        },
+        {
+          id: "2417041007",
+          skor: 600,
+          waktuMulai: 1718977200000,
+          waktuSelesai: 1718982000000,
+        },
+      ];
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyCiPXOr2eeg8NUUyEyyuE83XjtdwmrPjwY",
-        authDomain: "web-quiz-45e5b.firebaseapp.com",
-        projectId: "web-quiz-45e5b",
-        storageBucket: "web-quiz-45e5b.firebasestorage.app",
-        messagingSenderId: "793547501312",
-        appId: "1:793547501312:web:56b421b7a2fabfc6b48de5",
-        databaseURL: "https://web-quiz-45e5b-default-rtdb.firebaseio.com",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const db = getDatabase(app);
-
-      const tbody = document.getElementById("leaderboardBody");
-
-      function renderLeaderboard(snapshot) {
-        const data = snapshot.val();
-        const entries = Object.values(data || {});
-        entries.sort((a, b) => b.score - a.score);
-        tbody.innerHTML = entries
-          .map(
-            (e, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${e.userId}</td>
-          <td>${e.score}</td>
-        </tr>`
-          )
-          .join("");
+      function formatDurasi(ms) {
+        const durasiDetik = Math.floor(ms / 1000);
+        const menit = Math.floor(durasiDetik / 60);
+        const detik = durasiDetik % 60;
+        return `${menit}m ${detik}s`;
       }
 
-      const pesertaRef = ref(db, "peserta");
-      onValue(pesertaRef, renderLeaderboard);
+      function renderLeaderboard() {
+        const tbody = document.getElementById("leaderboard-body");
+        pesertaData.sort((a, b) => b.skor - a.skor);
+
+        pesertaData.forEach((p) => {
+          const row = document.createElement("tr");
+          const durasi =
+            p.waktuSelesai && p.waktuMulai
+              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
+              : "-";
+          row.innerHTML = `
+          <td>${p.id}</td>
+          <td>${p.skor}</td>
+          <td>${durasi}</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+      renderLeaderboard();
     </script>
   </body>
 </html>

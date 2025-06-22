@@ -1,170 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Panel</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background: #f1f4f9;
         margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        min-height: 100vh;
         padding: 20px;
       }
       h1 {
         text-align: center;
-        color: #2a5298;
+        margin-bottom: 30px;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
-        background: white;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        background-color: white;
+        color: black;
+        border-radius: 10px;
+        overflow: hidden;
       }
       th,
       td {
-        padding: 10px;
-        border: 1px solid #ddd;
+        padding: 12px;
         text-align: center;
+        border-bottom: 1px solid #ddd;
       }
       th {
-        background-color: #2a5298;
+        background-color: #4a5568;
         color: white;
       }
-      input,
-      button {
-        padding: 10px;
-        margin-top: 10px;
-        font-size: 16px;
+      tr:hover {
+        background-color: #f0f0f0;
       }
       button {
-        background-color: #e53935;
+        background-color: #e53e3e;
         color: white;
         border: none;
-        cursor: pointer;
+        padding: 8px 12px;
         border-radius: 5px;
+        cursor: pointer;
       }
-      .form {
-        margin: 20px 0;
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-      }
-      #timer {
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        color: #2a5298;
+      button:hover {
+        background-color: #c53030;
       }
     </style>
   </head>
   <body>
-    <h1>Admin Panel - Leaderboard</h1>
-    <div id="timer">Memuat timer...</div>
-
-    <div class="form">
-      <input type="text" id="resetId" placeholder="Masukkan ID Peserta" />
-      <button onclick="resetUser()">Reset Skor & Waktu</button>
-    </div>
-
+    <h1>Panel Admin - Reset Peserta</h1>
     <table>
       <thead>
         <tr>
-          <th>Peringkat</th>
           <th>ID Peserta</th>
           <th>Skor</th>
+          <th>Durasi</th>
+          <th>Aksi</th>
         </tr>
       </thead>
-      <tbody id="leaderboardBody"></tbody>
+      <tbody id="adminTableBody">
+        <!-- Data akan dimuat di sini -->
+      </tbody>
     </table>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-      import {
-        getDatabase,
-        ref,
-        onValue,
-        remove,
-        set,
-        get,
-      } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+    <script>
+      const dataPeserta = [
+        {
+          id: "2417041001",
+          skor: 800,
+          waktuMulai: 1718977200000,
+          waktuSelesai: 1718980800000,
+        },
+        {
+          id: "2417041005",
+          skor: 600,
+          waktuMulai: 1718978000000,
+          waktuSelesai: 1718981000000,
+        },
+      ];
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyCiPXOr2eeg8NUUyEyyuE83XjtdwmrPjwY",
-        authDomain: "web-quiz-45e5b.firebaseapp.com",
-        projectId: "web-quiz-45e5b",
-        storageBucket: "web-quiz-45e5b.firebasestorage.app",
-        messagingSenderId: "793547501312",
-        appId: "1:793547501312:web:56b421b7a2fabfc6b48de5",
-        databaseURL: "https://web-quiz-45e5b-default-rtdb.firebaseio.com",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const db = getDatabase(app);
-      const tbody = document.getElementById("leaderboardBody");
-
-      const userId = localStorage.getItem("userId") || "guest";
-
-      function renderLeaderboard(snapshot) {
-        const data = snapshot.val();
-        const entries = Object.values(data || {});
-        entries.sort((a, b) => b.score - a.score);
-        tbody.innerHTML = entries
-          .map(
-            (e, i) => `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${e.userId}</td>
-          <td>${e.score}</td>
-        </tr>`
-          )
-          .join("");
+      function formatDurasi(ms) {
+        const durasiDetik = Math.floor(ms / 1000);
+        const menit = Math.floor(durasiDetik / 60);
+        const detik = durasiDetik % 60;
+        return `${menit}m ${detik}s`;
       }
 
-      const pesertaRef = ref(db, "peserta");
-      onValue(pesertaRef, renderLeaderboard);
-
-      window.resetUser = function () {
-        const resetId = document.getElementById("resetId").value.trim();
-        if (!resetId) return alert("Masukkan ID peserta!");
-        remove(ref(db, "peserta/" + resetId));
-        alert(`Peserta ${resetId} telah direset dari Firebase.`);
-      };
-
-      function startTimer() {
-        const userRef = ref(db, "peserta/" + userId);
-
-        get(userRef).then((snapshot) => {
-          let startTime;
-
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            if (data.startTime) {
-              startTime = data.startTime;
-            } else {
-              startTime = Date.now();
-              set(userRef, { ...data, startTime });
-            }
-          } else {
-            startTime = Date.now();
-            set(userRef, { userId, score: 0, startTime });
-          }
-
-          setInterval(() => {
-            const now = Date.now();
-            const elapsed = now - startTime;
-            const hours = Math.floor((elapsed / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((elapsed / (1000 * 60)) % 60);
-            const seconds = Math.floor((elapsed / 1000) % 60);
-            document.getElementById(
-              "timer"
-            ).textContent = `${hours}j ${minutes}m ${seconds}d`;
-          }, 1000);
+      function renderTabel() {
+        const tbody = document.getElementById("adminTableBody");
+        tbody.innerHTML = "";
+        dataPeserta.forEach((p, index) => {
+          const row = document.createElement("tr");
+          const durasi = formatDurasi(p.waktuSelesai - p.waktuMulai);
+          row.innerHTML = `
+          <td>${p.id}</td>
+          <td>${p.skor}</td>
+          <td>${durasi}</td>
+          <td><button onclick="reset(${index})">Reset</button></td>
+        `;
+          tbody.appendChild(row);
         });
       }
 
-      startTimer();
+      function reset(index) {
+        if (confirm("Yakin ingin mereset skor dan waktu peserta ini?")) {
+          dataPeserta[index].skor = 0;
+          dataPeserta[index].waktuMulai = Date.now();
+          dataPeserta[index].waktuSelesai = Date.now();
+          renderTabel();
+        }
+      }
+
+      renderTabel();
     </script>
   </body>
 </html>

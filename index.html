@@ -7,68 +7,74 @@
     <style>
       body {
         margin: 0;
-        padding: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: Arial, sans-serif;
         background-image: url("images/pemandangan.jpg");
-        height: 100vh;
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+        height: 100vh;
       }
-      .login-container {
+      .login-box {
         background: white;
-        padding: 40px;
+        padding: 30px;
         border-radius: 10px;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         text-align: center;
         width: 300px;
       }
       h2 {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
         color: #2a5298;
       }
-      input[type="text"] {
-        width: 100%;
+      p {
+        font-size: 0.9em;
+        color: #555;
+        margin-bottom: 20px;
+      }
+      input {
         padding: 10px;
-        margin: 10px 0;
+        margin-bottom: 20px;
+        width: 100%;
         border: 1px solid #ccc;
         border-radius: 5px;
-        font-size: 16px;
       }
       button {
-        width: 100%;
-        padding: 10px;
-        background: #4caf50;
+        padding: 10px 20px;
+        background: #2a5298;
         color: white;
         border: none;
         border-radius: 5px;
-        font-size: 16px;
         cursor: pointer;
-      }
-      .note {
-        margin-top: 15px;
-        font-size: 12px;
-        color: #888;
       }
     </style>
   </head>
   <body>
-    <div class="login-container">
+    <div class="login-box">
       <h2>LOGIN TEKNOLOGI INFORMASI</h2>
-      <input type="text" id="userId" placeholder="Masukkan ID unik Anda" />
+      <p>
+        ID diberikan khusus oleh admin dan tidak dapat didaftarkan secara
+        mandiri.
+      </p>
+      <input type="text" id="userId" placeholder="Masukkan ID Anda" />
       <button onclick="login()">Masuk</button>
-      <div class="note">ID diberikan oleh Admin. Tidak ada pendaftaran.</div>
     </div>
 
     <script>
       function login() {
         const userId = document.getElementById("userId").value.trim();
-        if (!userId) {
-          alert("Silakan masukkan ID Anda.");
+        const allowedIds = ["satrio-1234"];
+        for (let i = 2417041001; i <= 2417041051; i++) {
+          allowedIds.push(i.toString());
+        }
+
+        if (!userId || !allowedIds.includes(userId)) {
+          alert(
+            "ID tidak dikenali. Harap gunakan ID yang diberikan oleh admin."
+          );
           return;
         }
+
         localStorage.setItem("userId", userId);
-        localStorage.removeItem("startTime");
 
         if (userId === "satrio-1234") {
           window.location.href = "admin.html";
