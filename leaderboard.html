@@ -1,10 +1,4 @@
-Berikut ini adalah versi **yang sudah diedit** dari `leaderboard.html`, agar
-leaderboard-nya **mengambil data langsung dari API Netlify Function** (bukan
-lagi dari `localStorage`), dan menampilkan data dari **Neon database**. --- ###
-✅ Perubahan: * Menghapus `localStorage.getItem("riwayatSkor")` * Mengambil data
-via `fetch("/.netlify/functions/leaderboard")` * Menyesuaikan format durasi dari
-API (`duration` dalam milidetik) --- ### 🔁 **Versi Baru `leaderboard.html`:**
-```html
+
 <!DOCTYPE html>
 <html lang="id">
   <head>
@@ -125,10 +119,3 @@ API (`duration` dalam milidetik) --- ### 🔁 **Versi Baru `leaderboard.html`:**
     </div>
   </body>
 </html>
-``` --- ## 🚀 Syarat agar ini berfungsi: 1. **Function `leaderboard.js`** sudah
-dibuat di: ``` netlify/functions/leaderboard.js ``` 2. Function ini
-**mengembalikan JSON** seperti: ```json [ { "id": "user01", "score": 90,
-"duration": 54000 }, { "id": "user02", "score": 80, "duration": 62000 } ] ``` 3.
-Sudah deploy ke Netlify & `NEON_DB_URL` sudah diset. --- Kalau kamu sudah siap,
-aku bisa bantu juga buat `submit-score.js` supaya skor peserta dikirim ke
-database begitu kuis selesai. Mau lanjut?
