@@ -112,17 +112,14 @@
 
     <script>
       const userId = localStorage.getItem("userId");
-
-      // Cek status akses soal dari server
       fetch(`/.netlify/functions/check-unlock?id=${userId}`)
         .then((res) => res.json())
         .then(({ unlocked }) => {
-          if (!unlocked && userId !== "satrio-1234") {
+          const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+          const dibukaAdmin = unlocked;
+          if (terkunci && !dibukaAdmin && userId !== "satrio-1234") {
             window.location.href = "leaderboard.html";
           }
-        })
-        .catch((err) => {
-          console.error("Gagal cek akses:", err);
         });
 
       const htmlEditor = CodeMirror.fromTextArea(
@@ -147,37 +144,46 @@
         }
       );
 
+      function generateRandomSoal(count = 10) {
+        const kombinasi = [
+          {
+            deskripsi:
+              "Buat form login dengan dua input: username dan password, dan satu tombol login.",
+            html: "",
+            css: "",
+            js: "",
+          },
+          {
+            deskripsi:
+              "Buat tabel HTML dengan 3 baris dan 2 kolom, serta beri border.",
+            html: "",
+            css: "",
+            js: "",
+          },
+          {
+            deskripsi:
+              "Buat elemen <div> dengan teks 'Klik aku' dan ubah background-nya jadi kuning saat diklik menggunakan JavaScript.",
+            html: "",
+            css: "",
+            js: "",
+          },
+        ];
+
+        const hasil = [];
+        for (let i = 0; i < count; i++) {
+          const soal = kombinasi[i % kombinasi.length];
+          hasil.push({ id: i + 1, ...soal });
+        }
+        return hasil;
+      }
+
       const soalData = generateRandomSoal(10);
       let skor = parseInt(localStorage.getItem("skor")) || 0;
       let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
       let jawabanTerkunci =
         JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
-
-      function generateRandomSoal(count = 10) {
-        const tags = ["div", "p", "h1", "h2", "button", "ul", "li"];
-        const colors = ["red", "blue", "green", "orange", "purple"];
-        const texts = [
-          "Halo Dunia",
-          "Klik Saya",
-          "Selamat Datang",
-          "Paragraf Baru",
-        ];
-        const hasil = [];
-
-        for (let i = 0; i < count; i++) {
-          const tag = tags[Math.floor(Math.random() * tags.length)];
-          const warna = colors[Math.floor(Math.random() * colors.length)];
-          const teks = texts[Math.floor(Math.random() * texts.length)];
-          hasil.push({
-            id: i + 1,
-            deskripsi: `Buat tag <${tag}> dengan teks "${teks}" dan beri warna ${warna}.`,
-            tag: tag,
-            teks: teks,
-            warna: warna,
-          });
-        }
-        return hasil;
-      }
+      let waktuMulai =
+        parseInt(localStorage.getItem("waktuMulai")) || Date.now();
 
       function tampilkanSoal() {
         const soal = soalData[soalIndex];
@@ -193,112 +199,81 @@
 
       function compileCode() {
         if (jawabanTerkunci.includes(soalIndex)) return;
-        const html = htmlEditor.getValue().replace(/\s/g, "").toLowerCase();
-        const css = cssEditor.getValue().replace(/\s/g, "").toLowerCase();
-        const js = jsEditor.getValue();
-        const soal = soalData[soalIndex];
-        const preview = document.getElementById("preview");
-        preview.srcdoc = `<style>${cssEditor.getValue()}</style>${html}<script>${js}<\/script>`;
-
-        const expectedHtml = `<${soal.tag}>${soal.teks}</${soal.tag}>`
-          .replace(/\s/g, "")
-          .toLowerCase();
-        const expectedCss = `${soal.tag}{color:${soal.warna};}`
-          .replace(/\s/g, "")
-          .toLowerCase();
-
-        if (html.includes(expectedHtml) && css.includes(expectedCss)) {
-          skor += 100;
-          jawabanTerkunci.push(soalIndex);
-          localStorage.setItem("skor", skor);
-          localStorage.setItem(
-            "jawabanTerkunci",
-            JSON.stringify(jawabanTerkunci)
-          );
-          document.getElementById("score").textContent = `Score: ${skor}`;
-        }
+        skor += 100;
+        jawabanTerkunci.push(soalIndex);
+        localStorage.setItem("skor", skor);
+        localStorage.setItem(
+          "jawabanTerkunci",
+          JSON.stringify(jawabanTerkunci)
+        );
+        document.getElementById("score").textContent = `Score: ${skor}`;
       }
 
       function nextSoal() {
         soalIndex++;
         if (soalIndex >= soalData.length) {
-          alert("Selesai! Skor akhir: " + skor);
-
           const waktuSelesai = Date.now();
-          const waktuMulai =
-            parseInt(localStorage.getItem("waktuMulai")) || waktuSelesai;
           const durasi = waktuSelesai - waktuMulai;
+          const sisaWaktuMs = getBatasWaktu() - waktuSelesai;
+          const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
+          const finalScore = skor + bonusWaktu;
+
           const id = localStorage.getItem("userId") || "anonim";
           const name = localStorage.getItem("userName") || "Peserta";
 
           fetch("/.netlify/functions/submit-score", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, name, score: skor, duration: durasi }),
-          })
-            .then(() => {
-              // 🔒 Kunci ulang akses soal via server
-              return fetch("/.netlify/functions/update-unlock", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, unlocked: false }),
-              });
-            })
-            .then(() => {
-              const riwayat =
-                JSON.parse(localStorage.getItem("riwayatSkor")) || [];
-              riwayat.push({ id, skor, waktuMulai, waktuSelesai });
-              localStorage.setItem("riwayatSkor", JSON.stringify(riwayat));
+            body: JSON.stringify({
+              id,
+              name,
+              score: finalScore,
+              duration: durasi,
+            }),
+          });
 
-              localStorage.setItem("aksesSoalTerkunci", "true");
-              localStorage.removeItem("overrideAksesSoal");
-              localStorage.removeItem("skor");
-              localStorage.removeItem("soalIndex");
-              localStorage.removeItem("jawabanTerkunci");
+          localStorage.setItem("aksesSoalTerkunci", "true");
+          localStorage.removeItem("skor");
+          localStorage.removeItem("soalIndex");
+          localStorage.removeItem("jawabanTerkunci");
+          localStorage.removeItem("waktuMulai");
 
-              window.location.href = "leaderboard.html";
-            })
-            .catch((err) => {
-              console.error("Gagal kirim skor atau kunci ulang:", err);
-              alert("Terjadi kesalahan saat submit.");
-            });
+          window.location.href = "leaderboard.html";
         } else {
           localStorage.setItem("soalIndex", soalIndex);
           tampilkanSoal();
         }
       }
 
+      function getBatasWaktu() {
+        const batas = new Date();
+        batas.setHours(24, 0, 0, 0);
+        return batas.getTime();
+      }
+
+      function startTimer() {
+        const timerEl = document.getElementById("timer");
+        const interval = setInterval(() => {
+          const sisa = getBatasWaktu() - Date.now();
+          if (sisa <= 0) {
+            clearInterval(interval);
+            timerEl.textContent = "Waktu Habis!";
+            alert("Waktu kuis telah habis!");
+            window.location.href = "leaderboard.html";
+          } else {
+            const jam = Math.floor(sisa / (1000 * 60 * 60));
+            const menit = Math.floor((sisa % (1000 * 60 * 60)) / (1000 * 60));
+            const detik = Math.floor((sisa % (1000 * 60)) / 1000);
+            timerEl.textContent = `${jam}j ${menit}m ${detik}d`;
+          }
+        }, 1000);
+      }
+
       window.onload = () => {
         tampilkanSoal();
         startTimer();
-        localStorage.setItem(
-          "waktuMulai",
-          localStorage.getItem("waktuMulai") || Date.now()
-        );
+        localStorage.setItem("waktuMulai", waktuMulai);
       };
-
-      function startTimer() {
-        const batasWaktu = new Date();
-        if (batasWaktu.getHours() >= 18)
-          batasWaktu.setDate(batasWaktu.getDate() + 1);
-        batasWaktu.setHours(18, 0, 0, 0);
-
-        setInterval(() => {
-          const sisa = batasWaktu - new Date();
-          if (sisa <= 0) {
-            document.getElementById("timer").textContent = "Waktu Habis!";
-            alert("Waktu kuis telah habis!");
-            window.location.href = "leaderboard.html";
-            return;
-          }
-          const jam = Math.floor(sisa / (1000 * 60 * 60));
-          const menit = Math.floor((sisa % (1000 * 60 * 60)) / (1000 * 60));
-          const detik = Math.floor((sisa % (1000 * 60)) / 1000);
-          document.getElementById(
-            "timer"
-          ).textContent = `${jam}j ${menit}m ${detik}d`;
-        }, 1000);
-      }
     </script>
   </body>
 </html>
