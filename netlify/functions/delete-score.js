@@ -2,12 +2,19 @@ const { Client } = require("pg");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method not allowed" };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
   }
 
   const { id } = JSON.parse(event.body || "{}");
+
   if (!id) {
-    return { statusCode: 400, body: "Missing ID" };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Missing ID" }),
+    };
   }
 
   const client = new Client({
@@ -17,7 +24,15 @@ exports.handler = async (event) => {
 
   try {
     await client.connect();
-    await client.query("DELETE FROM scores WHERE id = $1", [id]);
+
+    const result = await client.query(
+      `UPDATE scores
+       SET score = 0,
+           duration = NULL,
+           last_updated = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [id]
+    );
 
     return {
       statusCode: 200,
@@ -26,7 +41,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, error: err.message }),
+      body: JSON.stringify({ error: err.message }),
     };
   } finally {
     await client.end();
