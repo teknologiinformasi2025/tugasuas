@@ -63,7 +63,7 @@
     </style>
   </head>
   <body>
-    <h1>Panel Admin - Reset Peserta</h1>
+    <h1>Panel Admin - Reset dan Akses Peserta</h1>
     <table>
       <thead>
         <tr>
@@ -78,8 +78,7 @@
     </table>
 
     <div class="actions">
-      <button onclick="bukaAksesSoal()">Buka Akses Soal (Override)</button>
-      <button onclick="kunciUlangSoal()">Kunci Ulang Soal</button>
+      <button onclick="loadData()">🔄 Refresh Data</button>
     </div>
 
     <script>
@@ -113,7 +112,15 @@
             <td>${p.name}</td>
             <td>${p.score}</td>
             <td>${durasi}</td>
-            <td><button onclick="reset('${p.id}')">Reset</button></td>
+            <td>
+              <button onclick="reset('${p.id}')">Reset</button><br/>
+              <label>
+                <input type="checkbox" ${
+                  p.unlocked ? "checked" : ""
+                } onchange="setUnlock('${p.id}', this.checked)" />
+                Buka Akses
+              </label>
+            </td>
           `;
           tbody.appendChild(row);
         });
@@ -122,14 +129,12 @@
       async function reset(userId) {
         if (!confirm("Yakin ingin menghapus data peserta ini dari database?"))
           return;
-
         try {
           const res = await fetch("/.netlify/functions/delete-score", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: userId }),
           });
-
           const hasil = await res.json();
           if (hasil.success) {
             alert("Data berhasil dihapus.");
@@ -143,14 +148,23 @@
         }
       }
 
-      function bukaAksesSoal() {
-        localStorage.setItem("overrideAksesSoal", "true");
-        alert("Akses soal telah dibuka kembali oleh admin.");
-      }
-
-      function kunciUlangSoal() {
-        localStorage.removeItem("overrideAksesSoal");
-        alert("Override akses soal telah dikunci ulang.");
+      async function setUnlock(id, value) {
+        try {
+          const res = await fetch("/.netlify/functions/update-unlock", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, unlocked: value }),
+          });
+          const hasil = await res.json();
+          if (hasil.success) {
+            alert("Status akses soal diperbarui.");
+          } else {
+            alert("Gagal memperbarui status akses.");
+          }
+        } catch (err) {
+          alert("Kesalahan saat memperbarui akses.");
+          console.error(err);
+        }
       }
 
       loadData();

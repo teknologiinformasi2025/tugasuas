@@ -6,13 +6,17 @@
     <title>Soal Pemrograman</title>
     <script>
       const userId = localStorage.getItem("userId");
-      const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
-      const dibukaAdmin = localStorage.getItem("overrideAksesSoal") === "true";
 
-      // Jika sudah terkunci dan tidak ada override, redirect ke leaderboard
-      if (terkunci && !dibukaAdmin && userId !== "satrio-1234") {
-        window.location.href = "leaderboard.html";
-      }
+      fetch(`/.netlify/functions/check-unlock?id=${userId}`)
+        .then((res) => res.json())
+        .then(({ unlocked }) => {
+          const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+          const dibukaAdmin = unlocked;
+
+          if (terkunci && !dibukaAdmin && userId !== "satrio-1234") {
+            window.location.href = "leaderboard.html";
+          }
+        });
     </script>
 
     <link
