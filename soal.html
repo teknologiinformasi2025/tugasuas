@@ -102,185 +102,339 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
 
+    <!-- Bagian dalam <script> -->
     <script>
-      const userId = localStorage.getItem("userId");
-      fetch(`/.netlify/functions/check-unlock?id=${userId}`)
-        .then((res) => res.json())
-        .then(({ unlocked }) => {
-          if (unlocked) {
-            localStorage.removeItem("aksesSoalTerkunci");
-            localStorage.removeItem("sudahSubmit");
-            localStorage.removeItem("skor");
-            localStorage.removeItem("soalIndex");
-            localStorage.removeItem("jawabanTerkunci");
-            localStorage.setItem("waktuMulai", Date.now().toString());
-          }
+        const userId = localStorage.getItem("userId");
 
-          const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
-          const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
+        fetch(`/.netlify/functions/check-unlock?id=${userId}`)
+          .then((res) => res.json())
+          .then(({ unlocked }) => {
+            if (unlocked) {
+              localStorage.removeItem("aksesSoalTerkunci");
+              localStorage.removeItem("sudahSubmit");
+              localStorage.removeItem("skor");
+              localStorage.removeItem("soalIndex");
+              localStorage.removeItem("jawabanTerkunci");
+              localStorage.setItem("waktuMulai", Date.now().toString());
+            }
+          <script>
+            const userId = localStorage.getItem("userId");
+            fetch(`/.netlify/functions/check-unlock?id=${userId}`)
+              .then((res) => res.json())
+              .then(({ unlocked }) => {
+                if (unlocked) {
+                  localStorage.removeItem("aksesSoalTerkunci");
+                  localStorage.removeItem("sudahSubmit");
+                  localStorage.removeItem("skor");
+                  localStorage.removeItem("soalIndex");
+                  localStorage.removeItem("jawabanTerkunci");
+                  localStorage.setItem("waktuMulai", Date.now().toString());
+                }
 
-          if (
-            (terkunci && !unlocked && userId !== "satrio-1234") ||
-            sudahSubmit
-          ) {
-            window.location.href = "leaderboard.html";
-          } else {
-            tampilkanSoal();
-            startTimer();
-          }
-        });
+            const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
+            const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+            if ((terkunci && !unlocked && userId !== "satrio-1234") || sudahSubmit) {
+              window.location.href = "leaderboard.html";
+            } else {
+              tampilkanSoal();
+              startTimer();
+            }
+          });
+                const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+                const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
 
-      const htmlEditor = CodeMirror.fromTextArea(
-        document.getElementById("htmlEditor"),
-        { mode: "xml", lineNumbers: true }
-      );
-      const cssEditor = CodeMirror.fromTextArea(
-        document.getElementById("cssEditor"),
-        { mode: "css", lineNumbers: true }
-      );
-      const jsEditor = CodeMirror.fromTextArea(
-        document.getElementById("jsEditor"),
-        { mode: "javascript", lineNumbers: true }
-      );
+                if (
+                  (terkunci && !unlocked && userId !== "satrio-1234") ||
+                  sudahSubmit
+                ) {
+                  window.location.href = "leaderboard.html";
+                } else {
+                  tampilkanSoal();
+                  startTimer();
+                }
+              });
 
-      const soalData = [
-        { id: 1, deskripsi: "Buat form login dengan validasi JavaScript." },
-        {
-          id: 2,
-          deskripsi: "Buat tabel HTML 5 baris dengan pewarnaan baris genap.",
-        },
-        { id: 3, deskripsi: "Tombol yang menambah item <ul> saat diklik." },
-      ];
-      while (soalData.length < 10) {
-        soalData.push({
-          ...soalData[soalData.length % 3],
-          id: soalData.length + 1,
-        });
-      }
-
-      let skor = parseInt(localStorage.getItem("skor")) || 0;
-      let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
-      let jawabanTerkunci =
-        JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
-      let waktuMulai = parseInt(localStorage.getItem("waktuMulai"));
-
-      function tampilkanSoal() {
-        const soal = soalData[soalIndex];
-        document.getElementById("judulSoal").textContent = `Soal ${
-          soalIndex + 1
-        }`;
-        document.getElementById("deskripsiSoal").textContent = soal.deskripsi;
-        htmlEditor.setValue("");
-        cssEditor.setValue("");
-        jsEditor.setValue("");
-        document.getElementById("score").textContent = `Score: ${skor}`;
-      }
-
-      function compileCode() {
-        if (jawabanTerkunci.includes(soalIndex)) return;
-
-        const html = htmlEditor.getValue().trim();
-        const css = cssEditor.getValue().trim();
-        const js = jsEditor.getValue().trim();
-
-        if (!html && !css && !js) {
-          alert("Silakan isi dan compile jawaban terlebih dahulu.");
-          return;
-        }
-
-        skor += 100;
-        jawabanTerkunci.push(soalIndex);
-        localStorage.setItem("skor", skor);
-        localStorage.setItem(
-          "jawabanTerkunci",
-          JSON.stringify(jawabanTerkunci)
+        const htmlEditor = CodeMirror.fromTextArea(
+          document.getElementById("htmlEditor"),
+          { mode: "xml", lineNumbers: true }
         );
-        document.getElementById("score").textContent = `Score: ${skor}`;
-      }
+        const cssEditor = CodeMirror.fromTextArea(
+          document.getElementById("cssEditor"),
+          { mode: "css", lineNumbers: true }
+        );
+        const jsEditor = CodeMirror.fromTextArea(
+          document.getElementById("jsEditor"),
+          { mode: "javascript", lineNumbers: true }
+        );
 
-      async function nextSoal() {
-        if (!jawabanTerkunci.includes(soalIndex)) {
-          alert("Silakan klik Compile sebelum lanjut ke soal berikutnya.");
-          return;
+        function generateRandomSoal(count = 10) {
+          const kombinasi = [
+            {
+              deskripsi: "Buat form login dengan validasi JavaScript.",
+              html: "",
+              css: "",
+              js: "",
+            },
+            {
+              deskripsi: "Buat tabel HTML 5 baris dengan pewarnaan baris genap.",
+              html: "",
+              css: "",
+              js: "",
+            },
+            {
+              deskripsi: "Tombol yang menambah item <ul> saat diklik.",
+              html: "",
+              css: "",
+              js: "",
+            },
+          ];
+          const hasil = [];
+          for (let i = 0; i < count; i++) {
+            const soal = kombinasi[i % kombinasi.length];
+            hasil.push({ id: i + 1, ...soal });
+          }
+          return hasil;
         }
+            const soalData = [
+              { id: 1, deskripsi: "Buat form login dengan validasi JavaScript." },
+              {
+                id: 2,
+                deskripsi: "Buat tabel HTML 5 baris dengan pewarnaan baris genap.",
+              },
+              { id: 3, deskripsi: "Tombol yang menambah item <ul> saat diklik." },
+            ];
+            while (soalData.length < 10) {
+              soalData.push({
+                ...soalData[soalData.length % 3],
+                id: soalData.length + 1,
+              });
+            }
 
-        soalIndex++;
+        const soalData = generateRandomSoal(10);
+        let skor = parseInt(localStorage.getItem("skor")) || 0;
+        let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
+        let jawabanTerkunci =
+          JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
+        let waktuMulai = parseInt(localStorage.getItem("waktuMulai"));
+            let skor = parseInt(localStorage.getItem("skor")) || 0;
+            let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
+            let jawabanTerkunci =
+              JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
+            let waktuMulai = parseInt(localStorage.getItem("waktuMulai"));
 
-        if (soalIndex >= soalData.length) {
-          const waktuSelesai = Date.now();
-          const durasi = waktuSelesai - waktuMulai;
-          const sisaWaktuMs = getBatasWaktu() - waktuSelesai;
-          const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
-          const finalScore = skor + bonusWaktu;
+        function tampilkanSoal() {
+          const soal = soalData[soalIndex];
+          document.getElementById("judulSoal").textContent = `Soal ${soalIndex + 1}`;
+          document.getElementById("deskripsiSoal").textContent = soal.deskripsi;
+          htmlEditor.setValue(soal.html);
+          cssEditor.setValue(soal.css);
+          jsEditor.setValue(soal.js);
+          document.getElementById("score").textContent = `Score: ${skor}`;
+        }
+            function tampilkanSoal() {
+              const soal = soalData[soalIndex];
+              document.getElementById("judulSoal").textContent = `Soal ${
+                soalIndex + 1
+              }`;
+              document.getElementById("deskripsiSoal").textContent = soal.deskripsi;
+              htmlEditor.setValue("");
+              cssEditor.setValue("");
+              jsEditor.setValue("");
+              document.getElementById("score").textContent = `Score: ${skor}`;
+            }
 
-          const id = localStorage.getItem("userId");
-          const name = localStorage.getItem("userName");
+        function compileCode() {
+          if (jawabanTerkunci.includes(soalIndex)) return;
 
-          if (!id || !name) {
-            alert("ID atau nama tidak ditemukan. Silakan login ulang.");
+          const html = htmlEditor.getValue().trim();
+          const css = cssEditor.getValue().trim();
+          const js = jsEditor.getValue().trim();
+
+          if (!html && !css && !js) {
+            alert("Silakan isi dan compile jawaban terlebih dahulu.");
             return;
           }
 
-          if (localStorage.getItem("sudahSubmit") !== "true") {
-            try {
-              const res = await fetch("/.netlify/functions/submit-score", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  id,
-                  name,
-                  score: finalScore,
-                  duration: durasi,
-                }),
-              });
+          skor += 100;
+          jawabanTerkunci.push(soalIndex);
+          localStorage.setItem("skor", skor);
+          localStorage.setItem("jawabanTerkunci", JSON.stringify(jawabanTerkunci));
+          document.getElementById("score").textContent = `Score: ${skor}`;
+        }
+            function compileCode() {
+              if (jawabanTerkunci.includes(soalIndex)) return;
 
-              const text = await res.text();
-              if (!res.ok) throw new Error(text);
+              const html = htmlEditor.getValue().trim();
+              const css = cssEditor.getValue().trim();
+              const js = jsEditor.getValue().trim();
 
-              localStorage.setItem("sudahSubmit", "true");
-              localStorage.setItem("aksesSoalTerkunci", "true");
-            } catch (err) {
-              alert("Gagal menyimpan skor:\n" + err.message);
-              return;
+              if (!html && !css && !js) {
+                alert("Silakan isi dan compile jawaban terlebih dahulu.");
+                return;
+              }
+
+              skor += 100;
+              jawabanTerkunci.push(soalIndex);
+              localStorage.setItem("skor", skor);
+              localStorage.setItem(
+                "jawabanTerkunci",
+                JSON.stringify(jawabanTerkunci)
+              );
+              document.getElementById("score").textContent = `Score: ${skor}`;
             }
+
+        async function nextSoal() {
+          if (!jawabanTerkunci.includes(soalIndex)) {
+            alert("Silakan klik Compile sebelum lanjut ke soal berikutnya.");
+            return;
           }
 
-          localStorage.removeItem("skor");
-          localStorage.removeItem("soalIndex");
-          localStorage.removeItem("jawabanTerkunci");
-          localStorage.removeItem("waktuMulai");
+          soalIndex++;
 
-          window.location.href = "leaderboard.html";
-        } else {
-          localStorage.setItem("soalIndex", soalIndex);
-          tampilkanSoal();
+          if (soalIndex >= soalData.length) {
+            const waktuSelesai = Date.now();
+            const durasi = waktuSelesai - waktuMulai;
+            const sisaWaktuMs = getBatasWaktu() - waktuSelesai;
+            const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
+            const finalScore = skor + bonusWaktu;
+            async function nextSoal() {
+              if (!jawabanTerkunci.includes(soalIndex)) {
+                alert("Silakan klik Compile sebelum lanjut ke soal berikutnya.");
+                return;
+              }
+
+              soalIndex++;
+
+              if (soalIndex >= soalData.length) {
+                const waktuSelesai = Date.now();
+                const durasi = waktuSelesai - waktuMulai;
+                const sisaWaktuMs = getBatasWaktu() - waktuSelesai;
+                const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
+                const finalScore = skor + bonusWaktu;
+
+            const id = localStorage.getItem("userId");
+      const name = localStorage.getItem("userName");
+
+      if (!id || !name) {
+        alert("ID atau nama tidak ditemukan. Silakan login ulang.");
+        return;
+      }
+
+      const durasi = Date.now() - waktuMulai;
+      const sisaWaktuMs = getBatasWaktu() - Date.now();
+      const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
+      const finalScore = skor + bonusWaktu;
+
+      console.log("Mengirim ke server:", { id, name, score: finalScore, duration: durasi });
+
+      try {
+        const res = await fetch("/.netlify/functions/submit-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, name, score: finalScore, duration: durasi }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text);
         }
-      }
+        localStorage.setItem("sudahSubmit", "true");
+        localStorage.setItem("aksesSoalTerkunci", "true");
+        localStorage.removeItem("skor");
+        localStorage.removeItem("soalIndex");
+        localStorage.removeItem("jawabanTerkunci");
+        localStorage.removeItem("waktuMulai");
+        window.location.href = "leaderboard.html";
+      } catch (err) {
+        alert("Gagal menyimpan skor:\n" + err.message);
+      }return;
+          }
 
-      function getBatasWaktu() {
-        const batas = new Date();
-        batas.setDate(batas.getDate() + 1);
-        batas.setHours(12, 0, 0, 0); // 12 siang besok
-        return batas.getTime();
-      }
+            // Clear all state
+            localStorage.removeItem("skor");
+            localStorage.removeItem("soalIndex");
+            localStorage.removeItem("jawabanTerkunci");
+            localStorage.removeItem("waktuMulai");
 
-      function startTimer() {
-        const timerEl = document.getElementById("timer");
-        const interval = setInterval(() => {
-          const sisa = getBatasWaktu() - Date.now();
-          if (sisa <= 0) {
-            clearInterval(interval);
-            timerEl.textContent = "Waktu Habis!";
-            alert("Waktu kuis telah habis!");
             window.location.href = "leaderboard.html";
           } else {
-            const jam = Math.floor(sisa / (1000 * 60 * 60));
-            const menit = Math.floor((sisa % (1000 * 60 * 60)) / (1000 * 60));
-            const detik = Math.floor((sisa % (1000 * 60)) / 1000);
-            timerEl.textContent = `${jam}j ${menit}m ${detik}d`;
+            localStorage.setItem("soalIndex", soalIndex);
+            tampilkanSoal();
           }
-        }, 1000);
-      }
+        }
+                const id = localStorage.getItem("userId");
+                const name = localStorage.getItem("userName");
+
+                if (!id || !name) {
+                  alert("ID atau nama tidak ditemukan. Silakan login ulang.");
+                  return;
+                }
+
+                if (localStorage.getItem("sudahSubmit") !== "true") {
+                  try {
+                    const res = await fetch("/.netlify/functions/submit-score", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        id,
+                        name,
+                        score: finalScore,
+                        duration: durasi,
+                      }),
+                    });
+
+                    const text = await res.text();
+                    if (!res.ok) throw new Error(text);
+
+                    localStorage.setItem("sudahSubmit", "true");
+                    localStorage.setItem("aksesSoalTerkunci", "true");
+                  } catch (err) {
+                    alert("Gagal menyimpan skor:\n" + err.message);
+                    return;
+                  }
+                }
+
+                localStorage.removeItem("skor");
+                localStorage.removeItem("soalIndex");
+                localStorage.removeItem("jawabanTerkunci");
+                localStorage.removeItem("waktuMulai");
+
+                window.location.href = "leaderboard.html";
+              } else {
+                localStorage.setItem("soalIndex", soalIndex);
+                tampilkanSoal();
+              }
+            }
+
+        function getBatasWaktu() {
+        const batas = new Date();
+        batas.setDate(batas.getDate() + 1);
+        batas.setHours(12, 0, 0, 0);
+        return batas.getTime();
+        }
+            function getBatasWaktu() {
+              const batas = new Date();
+              batas.setDate(batas.getDate() + 1);
+              batas.setHours(12, 0, 0, 0); // 12 siang besok
+              return batas.getTime();
+            }
+
+        function startTimer() {
+          const timerEl = document.getElementById("timer");
+          const interval = setInterval(() => {
+            const sisa = getBatasWaktu() - Date.now();
+            if (sisa <= 0) {
+              clearInterval(interval);
+              timerEl.textContent = "Waktu Habis!";
+              alert("Waktu kuis telah habis!");
+              window.location.href = "leaderboard.html";
+            } else {
+              const jam = Math.floor(sisa / (1000 * 60 * 60));
+              const menit = Math.floor((sisa % (1000 * 60 * 60)) / (1000 * 60));
+              const detik = Math.floor((sisa % (1000 * 60)) / 1000);
+              timerEl.textContent = `${jam}j ${menit}m ${detik}d`;
+            }
+          }, 1000);
+        }
     </script>
   </body>
 </html>

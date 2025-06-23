@@ -21,7 +21,6 @@ exports.handler = async (event) => {
 
   const { id, name, score, duration } = payload;
 
-  // Validasi input
   if (
     !id ||
     !name ||
@@ -44,8 +43,8 @@ exports.handler = async (event) => {
     await client.connect();
 
     const query = `
-      INSERT INTO scores (id, name, score, duration, unlocked)
-      VALUES ($1, $2, $3, $4, false)
+      INSERT INTO scores (id, name, score, duration)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (id) DO UPDATE SET
         score = GREATEST(scores.score, EXCLUDED.score),
         duration = LEAST(scores.duration, EXCLUDED.duration),
