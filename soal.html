@@ -244,7 +244,8 @@
               localStorage.setItem("sudahSubmit", "true");
               localStorage.setItem("aksesSoalTerkunci", "true");
             } catch (err) {
-              alert("Gagal menyimpan skor: " + err.message);
+              const text = await res.text();
+              alert("Gagal menyimpan skor:\n" + text);
               return;
             }
           }
