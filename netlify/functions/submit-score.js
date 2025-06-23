@@ -8,7 +8,17 @@ exports.handler = async (event) => {
     };
   }
 
-  const { id, name, score } = JSON.parse(event.body || "{}");
+  let payload;
+  try {
+    payload = JSON.parse(event.body);
+  } catch (err) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Malformed JSON" }),
+    };
+  }
+
+  const { id, name, score, duration } = payload;
 
   if (!id || !name || typeof score !== "number") {
     return {
@@ -25,16 +35,17 @@ exports.handler = async (event) => {
   try {
     await client.connect();
 
-    // Upsert data: update skor jika lebih tinggi, atau insert kalau belum ada
+    // Upsert: simpan skor dan durasi, unlock tetap FALSE default
     await client.query(
       `
-      INSERT INTO scores (id, name, score)
-      VALUES ($1, $2, $3)
+      INSERT INTO scores (id, name, score, duration)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (id) DO UPDATE SET
         score = GREATEST(scores.score, EXCLUDED.score),
+        duration = LEAST(scores.duration, EXCLUDED.duration),
         last_updated = CURRENT_TIMESTAMP
     `,
-      [id, name, score]
+      [id, name, score, duration || null]
     );
 
     return {

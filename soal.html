@@ -18,7 +18,6 @@
           }
         });
     </script>
-
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
@@ -223,6 +222,7 @@
         }
       }
 
+      // Fungsi nextSoal() diupdate:
       function nextSoal() {
         soalIndex++;
 
@@ -237,18 +237,10 @@
           const id = localStorage.getItem("userId") || "anonim";
           const name = localStorage.getItem("userName") || "Peserta";
 
-          // Kirim data ke API Netlify Function
           fetch("/.netlify/functions/submit-score", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              id: id,
-              name: name,
-              score: skor,
-              duration: durasi,
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, name, score: skor, duration: durasi }),
           })
             .then((res) => res.json())
             .then((res) => {
@@ -258,19 +250,12 @@
               console.error("Gagal kirim skor:", err);
             });
 
-          // Simpan riwayat lokal juga (opsional)
-          const riwayat = JSON.parse(localStorage.getItem("riwayatSkor")) || [];
-          riwayat.push({ id, skor, waktuMulai, waktuSelesai });
-          localStorage.setItem("riwayatSkor", JSON.stringify(riwayat));
-
-          // Reset state lokal
           localStorage.setItem("aksesSoalTerkunci", "true");
           localStorage.removeItem("overrideAksesSoal");
           localStorage.removeItem("skor");
           localStorage.removeItem("soalIndex");
           localStorage.removeItem("jawabanTerkunci");
 
-          // Arahkan ke leaderboard
           window.location.href = "leaderboard.html";
         } else {
           localStorage.setItem("soalIndex", soalIndex);
