@@ -72,7 +72,6 @@
           <th>Skor</th>
           <th>Durasi</th>
           <th>Aksi</th>
-          <th>Buka Akses</th>
         </tr>
       </thead>
       <tbody id="adminTableBody"></tbody>
@@ -83,11 +82,48 @@
     </div>
 
     <script>
+      const semuaPeserta = ["trial1234"];
+      for (let i = 2417041001; i <= 2417041051; i++) {
+        semuaPeserta.push(i.toString());
+      }
+
       async function loadData() {
         try {
           const res = await fetch("/.netlify/functions/leaderboard");
           const data = await res.json();
-          renderTabel(data);
+          const dataMap = new Map(data.map((p) => [p.id, p]));
+
+          const tbody = document.getElementById("adminTableBody");
+          tbody.innerHTML = "";
+
+          semuaPeserta.forEach((id) => {
+            const peserta = dataMap.get(id) || {
+              id,
+              name: "-",
+              score: 0,
+              duration: null,
+              unlocked: false,
+            };
+            const durasi = peserta.duration
+              ? formatDurasi(peserta.duration)
+              : "-";
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${peserta.id}</td>
+            <td>${peserta.name || "-"}</td>
+            <td>${peserta.score}</td>
+            <td>${durasi}</td>
+            <td>
+              <button onclick="reset('${peserta.id}')">Reset</button><br/>
+              <label>
+                <input type="checkbox" ${peserta.unlocked ? "checked" : ""}
+                onchange="setUnlock('${peserta.id}', this.checked)" />
+                Buka Akses
+              </label>
+            </td>
+          `;
+            tbody.appendChild(row);
+          });
         } catch (err) {
           alert("Gagal mengambil data leaderboard.");
           console.error(err);
@@ -101,32 +137,10 @@
         return `${menit}m ${sisaDetik}s`;
       }
 
-      function renderTabel(dataPeserta) {
-        const tbody = document.getElementById("adminTableBody");
-        tbody.innerHTML = "";
-
-        dataPeserta.forEach((p) => {
-          const durasi = p.duration ? formatDurasi(p.duration) : "-";
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${p.id}</td>
-            <td>${p.name}</td>
-            <td>${p.score}</td>
-            <td>${durasi}</td>
-            <td><button onclick="reset('${p.id}')">Reset</button></td>
-            <td>
-              <input type="checkbox" ${
-                p.unlocked ? "checked" : ""
-              } onchange="setUnlock('${p.id}', this.checked)" />
-            </td>
-          `;
-          tbody.appendChild(row);
-        });
-      }
-
       async function reset(userId) {
         if (!confirm("Yakin ingin menghapus data peserta ini dari database?"))
           return;
+
         try {
           const res = await fetch("/.netlify/functions/delete-score", {
             method: "POST",
@@ -155,9 +169,9 @@
           });
           const hasil = await res.json();
           if (hasil.success) {
-            console.log(`Akses untuk ${id} diperbarui ke: ${value}`);
+            alert("Status akses soal diperbarui.");
           } else {
-            alert("Gagal memperbarui akses.");
+            alert("Gagal memperbarui status akses.");
           }
         } catch (err) {
           alert("Kesalahan saat memperbarui akses.");
