@@ -72,6 +72,7 @@
           <th>Skor</th>
           <th>Durasi</th>
           <th>Aksi</th>
+          <th>Buka Akses</th>
         </tr>
       </thead>
       <tbody id="adminTableBody"></tbody>
@@ -112,14 +113,11 @@
             <td>${p.name}</td>
             <td>${p.score}</td>
             <td>${durasi}</td>
+            <td><button onclick="reset('${p.id}')">Reset</button></td>
             <td>
-              <button onclick="reset('${p.id}')">Reset</button><br/>
-              <label>
-                <input type="checkbox" ${
-                  p.unlocked ? "checked" : ""
-                } onchange="setUnlock('${p.id}', this.checked)" />
-                Buka Akses
-              </label>
+              <input type="checkbox" ${
+                p.unlocked ? "checked" : ""
+              } onchange="setUnlock('${p.id}', this.checked)" />
             </td>
           `;
           tbody.appendChild(row);
@@ -157,9 +155,9 @@
           });
           const hasil = await res.json();
           if (hasil.success) {
-            alert("Status akses soal diperbarui.");
+            console.log(`Akses untuk ${id} diperbarui ke: ${value}`);
           } else {
-            alert("Gagal memperbarui status akses.");
+            alert("Gagal memperbarui akses.");
           }
         } catch (err) {
           alert("Kesalahan saat memperbarui akses.");
