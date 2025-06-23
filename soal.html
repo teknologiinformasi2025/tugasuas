@@ -42,15 +42,11 @@
         border-radius: 10px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
-      .editor-section h3 {
-        margin-top: 0;
-      }
       iframe {
         width: 100%;
         height: 300px;
         border: 1px solid #ccc;
         border-radius: 5px;
-        background: white;
       }
       button {
         padding: 10px 20px;
@@ -60,7 +56,6 @@
         border-radius: 25px;
         cursor: pointer;
         font-weight: bold;
-        transition: background 0.3s;
         margin-right: 10px;
       }
       button:hover {
@@ -70,9 +65,6 @@
         font-weight: bold;
         margin-left: 20px;
       }
-      .controls {
-        margin-bottom: 15px;
-      }
     </style>
   </head>
   <body>
@@ -81,7 +73,7 @@
       <div id="timer">Loading timer...</div>
     </header>
     <div class="container">
-      <div class="controls">
+      <div>
         <button onclick="compileCode()">Compile</button>
         <button onclick="nextSoal()">Next</button>
         <span id="score">Score: 0</span>
@@ -112,7 +104,6 @@
 
     <script>
       const userId = localStorage.getItem("userId");
-
       fetch(`/.netlify/functions/check-unlock?id=${userId}`)
         .then((res) => res.json())
         .then(({ unlocked }) => {
@@ -125,8 +116,9 @@
             localStorage.setItem("waktuMulai", Date.now().toString());
           }
 
-          const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
           const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
+          const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
+
           if (
             (terkunci && !unlocked && userId !== "satrio-1234") ||
             sudahSubmit
@@ -151,40 +143,21 @@
         { mode: "javascript", lineNumbers: true }
       );
 
-      function generateRandomSoal(count = 10) {
-        const kombinasi = [
-          {
-            deskripsi:
-              "Buat form login dengan validasi JavaScript untuk memastikan input tidak kosong sebelum dikirim.",
-            html: "",
-            css: "",
-            js: "",
-          },
-          {
-            deskripsi:
-              "Buat tabel HTML dengan 5 baris dan beri pewarnaan baris genap menggunakan CSS.",
-            html: "",
-            css: "",
-            js: "",
-          },
-          {
-            deskripsi:
-              "Buat tombol yang ketika diklik, akan menambah elemen list baru ke dalam <ul> menggunakan JavaScript.",
-            html: "",
-            css: "",
-            js: "",
-          },
-        ];
-
-        const hasil = [];
-        for (let i = 0; i < count; i++) {
-          const soal = kombinasi[i % kombinasi.length];
-          hasil.push({ id: i + 1, ...soal });
-        }
-        return hasil;
+      const soalData = [
+        { id: 1, deskripsi: "Buat form login dengan validasi JavaScript." },
+        {
+          id: 2,
+          deskripsi: "Buat tabel HTML 5 baris dengan pewarnaan baris genap.",
+        },
+        { id: 3, deskripsi: "Tombol yang menambah item <ul> saat diklik." },
+      ];
+      while (soalData.length < 10) {
+        soalData.push({
+          ...soalData[soalData.length % 3],
+          id: soalData.length + 1,
+        });
       }
 
-      const soalData = generateRandomSoal(10);
       let skor = parseInt(localStorage.getItem("skor")) || 0;
       let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
       let jawabanTerkunci =
@@ -197,14 +170,24 @@
           soalIndex + 1
         }`;
         document.getElementById("deskripsiSoal").textContent = soal.deskripsi;
-        htmlEditor.setValue(soal.html);
-        cssEditor.setValue(soal.css);
-        jsEditor.setValue(soal.js);
+        htmlEditor.setValue("");
+        cssEditor.setValue("");
+        jsEditor.setValue("");
         document.getElementById("score").textContent = `Score: ${skor}`;
       }
 
       function compileCode() {
         if (jawabanTerkunci.includes(soalIndex)) return;
+
+        const html = htmlEditor.getValue().trim();
+        const css = cssEditor.getValue().trim();
+        const js = jsEditor.getValue().trim();
+
+        if (!html && !css && !js) {
+          alert("Silakan isi dan compile jawaban terlebih dahulu.");
+          return;
+        }
+
         skor += 100;
         jawabanTerkunci.push(soalIndex);
         localStorage.setItem("skor", skor);
@@ -216,7 +199,13 @@
       }
 
       async function nextSoal() {
+        if (!jawabanTerkunci.includes(soalIndex)) {
+          alert("Silakan klik Compile sebelum lanjut ke soal berikutnya.");
+          return;
+        }
+
         soalIndex++;
+
         if (soalIndex >= soalData.length) {
           const waktuSelesai = Date.now();
           const durasi = waktuSelesai - waktuMulai;
@@ -224,11 +213,15 @@
           const bonusWaktu = Math.floor(sisaWaktuMs / 3600000) * 50;
           const finalScore = skor + bonusWaktu;
 
-          const id = localStorage.getItem("userId") || "anonim";
-          const name = localStorage.getItem("userName") || "Peserta";
+          const id = localStorage.getItem("userId");
+          const name = localStorage.getItem("userName");
 
-          const sudahSubmit = localStorage.getItem("sudahSubmit") === "true";
-          if (!sudahSubmit) {
+          if (!id || !name) {
+            alert("ID atau nama tidak ditemukan. Silakan login ulang.");
+            return;
+          }
+
+          if (localStorage.getItem("sudahSubmit") !== "true") {
             try {
               const res = await fetch("/.netlify/functions/submit-score", {
                 method: "POST",
@@ -240,12 +233,14 @@
                   duration: durasi,
                 }),
               });
-              if (!res.ok) throw new Error("Submit gagal");
+
+              const text = await res.text();
+              if (!res.ok) throw new Error(text);
+
               localStorage.setItem("sudahSubmit", "true");
               localStorage.setItem("aksesSoalTerkunci", "true");
             } catch (err) {
-              const text = await res.text();
-              alert("Gagal menyimpan skor:\n" + text);
+              alert("Gagal menyimpan skor:\n" + err.message);
               return;
             }
           }
@@ -254,6 +249,7 @@
           localStorage.removeItem("soalIndex");
           localStorage.removeItem("jawabanTerkunci");
           localStorage.removeItem("waktuMulai");
+
           window.location.href = "leaderboard.html";
         } else {
           localStorage.setItem("soalIndex", soalIndex);
@@ -263,7 +259,8 @@
 
       function getBatasWaktu() {
         const batas = new Date();
-        batas.setHours(24, 0, 0, 0);
+        batas.setDate(batas.getDate() + 1);
+        batas.setHours(12, 0, 0, 0); // 12 siang besok
         return batas.getTime();
       }
 
