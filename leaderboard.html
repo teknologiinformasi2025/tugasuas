@@ -1,3 +1,10 @@
+Berikut ini adalah versi **yang sudah diedit** dari `leaderboard.html`, agar
+leaderboard-nya **mengambil data langsung dari API Netlify Function** (bukan
+lagi dari `localStorage`), dan menampilkan data dari **Neon database**. --- ###
+✅ Perubahan: * Menghapus `localStorage.getItem("riwayatSkor")` * Mengambil data
+via `fetch("/.netlify/functions/leaderboard")` * Menyesuaikan format durasi dari
+API (`duration` dalam milidetik) --- ### 🔁 **Versi Baru `leaderboard.html`:**
+```html
 <!DOCTYPE html>
 <html lang="id">
   <head>
@@ -57,6 +64,46 @@
       if (terkunci && currentPage.includes("soal.html")) {
         window.location.href = "leaderboard.html";
       }
+
+      // Kunci soal untuk semua peserta setelah selesai
+      localStorage.setItem("aksesSoalTerkunci", "true");
+
+      // Format durasi dari milidetik ke menit:detik
+      function formatDurasi(ms) {
+        const totalDetik = Math.floor(ms / 1000);
+        const menit = Math.floor(totalDetik / 60);
+        const detik = totalDetik % 60;
+        return `${menit}m ${detik}s`;
+      }
+
+      async function loadLeaderboard() {
+        try {
+          const res = await fetch("/.netlify/functions/leaderboard");
+          const data = await res.json();
+
+          const tbody = document.getElementById("leaderboard-body");
+          tbody.innerHTML = "";
+
+          data.forEach((peserta) => {
+            const durasi = peserta.duration
+              ? formatDurasi(peserta.duration)
+              : "-";
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${peserta.id}</td>
+            <td>${peserta.score}</td>
+            <td>${durasi}</td>
+          `;
+            tbody.appendChild(row);
+          });
+        } catch (error) {
+          console.error("Gagal memuat leaderboard:", error);
+          const tbody = document.getElementById("leaderboard-body");
+          tbody.innerHTML = `<tr><td colspan="3">Gagal memuat data.</td></tr>`;
+        }
+      }
+
+      window.onload = loadLeaderboard;
     </script>
   </head>
   <body>
@@ -76,53 +123,12 @@
         Kembali ke Beranda
       </button>
     </div>
-
-    <script>
-      const data = JSON.parse(localStorage.getItem("riwayatSkor")) || [];
-
-      // Kunci soal untuk semua peserta setelah selesai
-      localStorage.setItem("aksesSoalTerkunci", "true");
-
-      // Gabungkan entri per ID peserta: ambil skor tertinggi dari peserta yang sama
-      const pesertaMap = new Map();
-
-      data.forEach((p) => {
-        if (!pesertaMap.has(p.id) || pesertaMap.get(p.id).skor < p.skor) {
-          pesertaMap.set(p.id, p);
-        }
-      });
-
-      const pesertaUnik = Array.from(pesertaMap.values());
-
-      // Urutkan berdasarkan skor tertinggi
-      pesertaUnik.sort((a, b) => b.skor - a.skor);
-
-      function formatDurasi(ms) {
-        const durasiDetik = Math.floor(ms / 1000);
-        const menit = Math.floor(durasiDetik / 60);
-        const detik = durasiDetik % 60;
-        return `${menit}m ${detik}s`;
-      }
-
-      function renderLeaderboard() {
-        const tbody = document.getElementById("leaderboard-body");
-        tbody.innerHTML = "";
-        pesertaUnik.forEach((p) => {
-          const durasi =
-            p.waktuSelesai && p.waktuMulai
-              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
-              : "-";
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${p.id}</td>
-            <td>${p.skor}</td>
-            <td>${durasi}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      }
-
-      renderLeaderboard();
-    </script>
   </body>
 </html>
+``` --- ## 🚀 Syarat agar ini berfungsi: 1. **Function `leaderboard.js`** sudah
+dibuat di: ``` netlify/functions/leaderboard.js ``` 2. Function ini
+**mengembalikan JSON** seperti: ```json [ { "id": "user01", "score": 90,
+"duration": 54000 }, { "id": "user02", "score": 80, "duration": 62000 } ] ``` 3.
+Sudah deploy ke Netlify & `NEON_DB_URL` sudah diset. --- Kalau kamu sudah siap,
+aku bisa bantu juga buat `submit-score.js` supaya skor peserta dikirim ke
+database begitu kuis selesai. Mau lanjut?

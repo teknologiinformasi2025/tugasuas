@@ -68,6 +68,7 @@
       <thead>
         <tr>
           <th>ID Peserta</th>
+          <th>Nama</th>
           <th>Skor</th>
           <th>Durasi</th>
           <th>Aksi</th>
@@ -82,45 +83,63 @@
     </div>
 
     <script>
-      function formatDurasi(ms) {
-        const durasiDetik = Math.floor(ms / 1000);
-        const menit = Math.floor(durasiDetik / 60);
-        const detik = durasiDetik % 60;
-        return `${menit}m ${detik}s`;
+      async function loadData() {
+        try {
+          const res = await fetch("/.netlify/functions/leaderboard");
+          const data = await res.json();
+          renderTabel(data);
+        } catch (err) {
+          alert("Gagal mengambil data leaderboard.");
+          console.error(err);
+        }
       }
 
-      function renderTabel() {
-        const tbody = document.getElementById("adminTableBody");
-        const dataPeserta =
-          JSON.parse(localStorage.getItem("riwayatSkor")) || [];
+      function formatDurasi(ms) {
+        const detik = Math.floor(ms / 1000);
+        const menit = Math.floor(detik / 60);
+        const sisaDetik = detik % 60;
+        return `${menit}m ${sisaDetik}s`;
+      }
 
+      function renderTabel(dataPeserta) {
+        const tbody = document.getElementById("adminTableBody");
         tbody.innerHTML = "";
 
-        dataPeserta.forEach((p, index) => {
+        dataPeserta.forEach((p) => {
+          const durasi = p.duration ? formatDurasi(p.duration) : "-";
           const row = document.createElement("tr");
-          const durasi =
-            p.waktuSelesai && p.waktuMulai
-              ? formatDurasi(p.waktuSelesai - p.waktuMulai)
-              : "-";
           row.innerHTML = `
             <td>${p.id}</td>
-            <td>${p.skor}</td>
+            <td>${p.name}</td>
+            <td>${p.score}</td>
             <td>${durasi}</td>
-            <td><button onclick="reset(${index})">Reset</button></td>
+            <td><button onclick="reset('${p.id}')">Reset</button></td>
           `;
           tbody.appendChild(row);
         });
       }
 
-      function reset(index) {
-        const dataPeserta =
-          JSON.parse(localStorage.getItem("riwayatSkor")) || [];
-        if (confirm("Yakin ingin mereset skor dan waktu peserta ini?")) {
-          dataPeserta[index].skor = 0;
-          dataPeserta[index].waktuMulai = Date.now();
-          dataPeserta[index].waktuSelesai = Date.now();
-          localStorage.setItem("riwayatSkor", JSON.stringify(dataPeserta));
-          renderTabel();
+      async function reset(userId) {
+        if (!confirm("Yakin ingin menghapus data peserta ini dari database?"))
+          return;
+
+        try {
+          const res = await fetch("/.netlify/functions/delete-score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: userId }),
+          });
+
+          const hasil = await res.json();
+          if (hasil.success) {
+            alert("Data berhasil dihapus.");
+            loadData();
+          } else {
+            alert("Gagal menghapus data.");
+          }
+        } catch (err) {
+          alert("Terjadi kesalahan saat menghapus.");
+          console.error(err);
         }
       }
 
@@ -134,7 +153,7 @@
         alert("Override akses soal telah dikunci ulang.");
       }
 
-      renderTabel();
+      loadData();
     </script>
   </body>
 </html>
