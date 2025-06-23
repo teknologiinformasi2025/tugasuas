@@ -1,31 +1,32 @@
-const { Client } = require("pg");
+const { Pool } = require("pg");
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // jika pakai Neon atau Heroku
+});
 
 exports.handler = async (event) => {
-  const id = event.queryStringParameters.id;
+  const { id } = event.queryStringParameters;
 
   if (!id) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "ID missing" }),
+      body: JSON.stringify({ error: "Missing ID" }),
     };
   }
 
-  const client = new Client({
-    connectionString: process.env.NEON_DB_URL,
-    ssl: { rejectUnauthorized: false },
-  });
-
   try {
-    await client.connect();
+    const client = await pool.connect();
     const result = await client.query(
-      "SELECT unlocked FROM scores WHERE id = $1",
+      "SELECT unlocked FROM peserta WHERE id = $1",
       [id]
     );
+    client.release();
 
     if (result.rows.length === 0) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ unlocked: false }),
+        body: JSON.stringify({ unlocked: false }), // default: terkunci
       };
     }
 
@@ -34,12 +35,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({ unlocked: result.rows[0].unlocked }),
     };
   } catch (err) {
-    console.error(err);
+    console.error("Database error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Internal error" }),
+      body: JSON.stringify({ error: "Internal Server Error" }),
     };
-  } finally {
-    await client.end();
   }
 };

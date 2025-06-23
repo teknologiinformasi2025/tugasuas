@@ -1,3 +1,5 @@
+// netlify/functions/submit-score.js
+
 const { Client } = require("pg");
 
 exports.handler = async (event) => {
@@ -40,7 +42,7 @@ exports.handler = async (event) => {
   try {
     await client.connect();
 
-    // Upsert logic: jika peserta sudah ada, update hanya jika skor baru lebih tinggi
+    // Masukkan skor ke database, update jika skor baru lebih tinggi dan durasi lebih pendek
     const query = `
       INSERT INTO scores (id, name, score, duration, unlocked)
       VALUES ($1, $2, $3, $4, false)
