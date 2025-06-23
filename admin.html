@@ -99,7 +99,7 @@
           semuaPeserta.forEach((id) => {
             const peserta = dataMap.get(id) || {
               id,
-              name: "-",
+              name: `Peserta ${id}`,
               score: 0,
               duration: null,
               unlocked: false,
@@ -109,19 +109,19 @@
               : "-";
             const row = document.createElement("tr");
             row.innerHTML = `
-            <td>${peserta.id}</td>
-            <td>${peserta.name || "-"}</td>
-            <td>${peserta.score}</td>
-            <td>${durasi}</td>
-            <td>
-              <button onclick="reset('${peserta.id}')">Reset</button><br/>
-              <label>
-                <input type="checkbox" ${peserta.unlocked ? "checked" : ""}
-                onchange="setUnlock('${peserta.id}', this.checked)" />
-                Buka Akses
-              </label>
-            </td>
-          `;
+              <td>${peserta.id}</td>
+              <td>${peserta.name}</td>
+              <td>${peserta.score}</td>
+              <td>${durasi}</td>
+              <td>
+                <button onclick="reset('${peserta.id}')">Reset</button><br/>
+                <label>
+                  <input type="checkbox" ${peserta.unlocked ? "checked" : ""}
+                    onchange="setUnlock('${peserta.id}', this.checked)" />
+                  Buka Akses
+                </label>
+              </td>
+            `;
             tbody.appendChild(row);
           });
         } catch (err) {
@@ -138,8 +138,7 @@
       }
 
       async function reset(userId) {
-        if (!confirm("Yakin ingin menghapus data peserta ini dari database?"))
-          return;
+        if (!confirm("Yakin ingin reset skor dan waktu peserta ini?")) return;
 
         try {
           const res = await fetch("/.netlify/functions/delete-score", {
@@ -149,13 +148,13 @@
           });
           const hasil = await res.json();
           if (hasil.success) {
-            alert("Data berhasil dihapus.");
+            alert("Reset berhasil.");
             loadData();
           } else {
-            alert("Gagal menghapus data.");
+            alert("Gagal reset data.");
           }
         } catch (err) {
-          alert("Terjadi kesalahan saat menghapus.");
+          alert("Kesalahan saat reset.");
           console.error(err);
         }
       }
@@ -169,12 +168,12 @@
           });
           const hasil = await res.json();
           if (hasil.success) {
-            alert("Status akses soal diperbarui.");
+            alert("Status akses diperbarui.");
           } else {
-            alert("Gagal memperbarui status akses.");
+            alert("Gagal memperbarui akses.");
           }
         } catch (err) {
-          alert("Kesalahan saat memperbarui akses.");
+          alert("Kesalahan saat update akses.");
           console.error(err);
         }
       }

@@ -25,7 +25,7 @@ exports.handler = async (event) => {
   try {
     await client.connect();
 
-    const result = await client.query(
+    await client.query(
       `UPDATE scores
        SET score = 0,
            duration = NULL,
