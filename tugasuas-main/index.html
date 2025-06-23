@@ -76,8 +76,14 @@
           return;
         }
 
-        localStorage.setItem("userId", userId);
+        // Reset seluruh session storage agar tidak membawa sesi lama
+        localStorage.clear();
 
+        // Simpan userId (dan bisa juga nama default)
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("userName", "Peserta");
+
+        // Arahkan ke halaman yang sesuai
         if (userId === "satrio-1234") {
           window.location.href = "admin.html";
         } else {
