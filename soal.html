@@ -4,20 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Soal Pemrograman</title>
-    <script>
-      const userId = localStorage.getItem("userId");
-
-      fetch(`/.netlify/functions/check-unlock?id=${userId}`)
-        .then((res) => res.json())
-        .then(({ unlocked }) => {
-          const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
-          const dibukaAdmin = unlocked;
-
-          if (terkunci && !dibukaAdmin && userId !== "satrio-1234") {
-            window.location.href = "leaderboard.html";
-          }
-        });
-    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
@@ -125,6 +111,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
 
     <script>
+      const userId = localStorage.getItem("userId");
+
+      // Cek status akses soal dari server
+      fetch(`/.netlify/functions/check-unlock?id=${userId}`)
+        .then((res) => res.json())
+        .then(({ unlocked }) => {
+          if (!unlocked && userId !== "satrio-1234") {
+            window.location.href = "leaderboard.html";
+          }
+        })
+        .catch((err) => {
+          console.error("Gagal cek akses:", err);
+        });
+
       const htmlEditor = CodeMirror.fromTextArea(
         document.getElementById("htmlEditor"),
         {
@@ -147,6 +147,12 @@
         }
       );
 
+      const soalData = generateRandomSoal(10);
+      let skor = parseInt(localStorage.getItem("skor")) || 0;
+      let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
+      let jawabanTerkunci =
+        JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
+
       function generateRandomSoal(count = 10) {
         const tags = ["div", "p", "h1", "h2", "button", "ul", "li"];
         const colors = ["red", "blue", "green", "orange", "purple"];
@@ -156,13 +162,12 @@
           "Selamat Datang",
           "Paragraf Baru",
         ];
-
         const hasil = [];
+
         for (let i = 0; i < count; i++) {
           const tag = tags[Math.floor(Math.random() * tags.length)];
           const warna = colors[Math.floor(Math.random() * colors.length)];
           const teks = texts[Math.floor(Math.random() * texts.length)];
-
           hasil.push({
             id: i + 1,
             deskripsi: `Buat tag <${tag}> dengan teks "${teks}" dan beri warna ${warna}.`,
@@ -173,12 +178,6 @@
         }
         return hasil;
       }
-
-      const soalData = generateRandomSoal(10);
-      let skor = parseInt(localStorage.getItem("skor")) || 0;
-      let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
-      let jawabanTerkunci =
-        JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
 
       function tampilkanSoal() {
         const soal = soalData[soalIndex];
@@ -194,12 +193,10 @@
 
       function compileCode() {
         if (jawabanTerkunci.includes(soalIndex)) return;
-
         const html = htmlEditor.getValue().replace(/\s/g, "").toLowerCase();
         const css = cssEditor.getValue().replace(/\s/g, "").toLowerCase();
         const js = jsEditor.getValue();
         const soal = soalData[soalIndex];
-
         const preview = document.getElementById("preview");
         preview.srcdoc = `<style>${cssEditor.getValue()}</style>${html}<script>${js}<\/script>`;
 
@@ -222,10 +219,8 @@
         }
       }
 
-      // Fungsi nextSoal() diupdate:
       function nextSoal() {
         soalIndex++;
-
         if (soalIndex >= soalData.length) {
           alert("Selesai! Skor akhir: " + skor);
 
@@ -233,7 +228,6 @@
           const waktuMulai =
             parseInt(localStorage.getItem("waktuMulai")) || waktuSelesai;
           const durasi = waktuSelesai - waktuMulai;
-
           const id = localStorage.getItem("userId") || "anonim";
           const name = localStorage.getItem("userName") || "Peserta";
 
@@ -242,21 +236,32 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id, name, score: skor, duration: durasi }),
           })
-            .then((res) => res.json())
-            .then((res) => {
-              console.log("Submit skor sukses:", res);
+            .then(() => {
+              // 🔒 Kunci ulang akses soal via server
+              return fetch("/.netlify/functions/update-unlock", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, unlocked: false }),
+              });
+            })
+            .then(() => {
+              const riwayat =
+                JSON.parse(localStorage.getItem("riwayatSkor")) || [];
+              riwayat.push({ id, skor, waktuMulai, waktuSelesai });
+              localStorage.setItem("riwayatSkor", JSON.stringify(riwayat));
+
+              localStorage.setItem("aksesSoalTerkunci", "true");
+              localStorage.removeItem("overrideAksesSoal");
+              localStorage.removeItem("skor");
+              localStorage.removeItem("soalIndex");
+              localStorage.removeItem("jawabanTerkunci");
+
+              window.location.href = "leaderboard.html";
             })
             .catch((err) => {
-              console.error("Gagal kirim skor:", err);
+              console.error("Gagal kirim skor atau kunci ulang:", err);
+              alert("Terjadi kesalahan saat submit.");
             });
-
-          localStorage.setItem("aksesSoalTerkunci", "true");
-          localStorage.removeItem("overrideAksesSoal");
-          localStorage.removeItem("skor");
-          localStorage.removeItem("soalIndex");
-          localStorage.removeItem("jawabanTerkunci");
-
-          window.location.href = "leaderboard.html";
         } else {
           localStorage.setItem("soalIndex", soalIndex);
           tampilkanSoal();
@@ -274,11 +279,8 @@
 
       function startTimer() {
         const batasWaktu = new Date();
-        // Jika sekarang sudah lewat jam 18.00, set ke besok
-        if (batasWaktu.getHours() >= 18) {
+        if (batasWaktu.getHours() >= 18)
           batasWaktu.setDate(batasWaktu.getDate() + 1);
-        }
-        // Set ke jam 18.00 (6 sore)
         batasWaktu.setHours(18, 0, 0, 0);
 
         setInterval(() => {
@@ -289,7 +291,6 @@
             window.location.href = "leaderboard.html";
             return;
           }
-
           const jam = Math.floor(sisa / (1000 * 60 * 60));
           const menit = Math.floor((sisa % (1000 * 60 * 60)) / (1000 * 60));
           const detik = Math.floor((sisa % (1000 * 60)) / 1000);

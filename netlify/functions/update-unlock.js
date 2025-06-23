@@ -2,20 +2,29 @@ const { Client } = require("pg");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method not allowed" };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
   }
 
-  let id, unlocked;
+  let payload;
   try {
-    const body = JSON.parse(event.body || "{}");
-    id = body.id;
-    unlocked = body.unlocked;
+    payload = JSON.parse(event.body || "{}");
   } catch (err) {
-    return { statusCode: 400, body: "Invalid JSON body" };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid JSON" }),
+    };
   }
+
+  const { id, unlocked } = payload;
 
   if (!id || typeof unlocked !== "boolean") {
-    return { statusCode: 400, body: "Invalid or missing fields" };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Missing or invalid parameters" }),
+    };
   }
 
   const client = new Client({
@@ -26,24 +35,17 @@ exports.handler = async (event) => {
   try {
     await client.connect();
 
-    const res = await client.query(
-      "UPDATE scores SET unlocked = $1 WHERE id = $2",
+    await client.query(
+      "UPDATE scores SET unlocked = $1, last_updated = CURRENT_TIMESTAMP WHERE id = $2",
       [unlocked, id]
     );
-
-    if (res.rowCount === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ success: false, message: "ID tidak ditemukan" }),
-      };
-    }
 
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true }),
     };
   } catch (err) {
-    console.error("DB Error:", err);
+    console.error("DB error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
