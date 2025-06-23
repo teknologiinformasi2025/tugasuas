@@ -117,36 +117,36 @@
       fetch(`/.netlify/functions/check-unlock?id=${userId}`)
         .then((res) => res.json())
         .then(({ unlocked }) => {
+          if (unlocked) {
+            localStorage.removeItem("aksesSoalTerkunci");
+            if (!localStorage.getItem("waktuMulai")) {
+              localStorage.setItem("waktuMulai", Date.now().toString());
+            }
+          }
+
           const terkunci = localStorage.getItem("aksesSoalTerkunci") === "true";
-          const dibukaAdmin = unlocked;
           if (
-            (terkunci && !dibukaAdmin && userId !== "satrio-1234") ||
+            (terkunci && !unlocked && userId !== "satrio-1234") ||
             sudahSubmit
           ) {
             window.location.href = "leaderboard.html";
           }
+
+          tampilkanSoal();
+          startTimer();
         });
 
       const htmlEditor = CodeMirror.fromTextArea(
         document.getElementById("htmlEditor"),
-        {
-          mode: "xml",
-          lineNumbers: true,
-        }
+        { mode: "xml", lineNumbers: true }
       );
       const cssEditor = CodeMirror.fromTextArea(
         document.getElementById("cssEditor"),
-        {
-          mode: "css",
-          lineNumbers: true,
-        }
+        { mode: "css", lineNumbers: true }
       );
       const jsEditor = CodeMirror.fromTextArea(
         document.getElementById("jsEditor"),
-        {
-          mode: "javascript",
-          lineNumbers: true,
-        }
+        { mode: "javascript", lineNumbers: true }
       );
 
       function generateRandomSoal(count = 10) {
@@ -187,14 +187,7 @@
       let soalIndex = parseInt(localStorage.getItem("soalIndex")) || 0;
       let jawabanTerkunci =
         JSON.parse(localStorage.getItem("jawabanTerkunci")) || [];
-      let waktuMulai;
-
-      if (!localStorage.getItem("waktuMulai")) {
-        waktuMulai = Date.now();
-        localStorage.setItem("waktuMulai", waktuMulai);
-      } else {
-        waktuMulai = parseInt(localStorage.getItem("waktuMulai"));
-      }
+      let waktuMulai = parseInt(localStorage.getItem("waktuMulai"));
 
       function tampilkanSoal() {
         const soal = soalData[soalIndex];
@@ -283,11 +276,6 @@
           }
         }, 1000);
       }
-
-      window.onload = () => {
-        tampilkanSoal();
-        startTimer();
-      };
     </script>
   </body>
 </html>
